@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-file-text"></i> Reports</h1>
+</div>
+<div class="card">
+    <div class="card-header">All Reports ({{ reports|length }})</div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>ID</th><th>Title</th><th>User</th><th>Department</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% if reports %}
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.id }}</td>
+                    <td>{{ report.title }}</td>
+                    <td>{{ report.first_name or report.username or 'N/A' }}</td>
+                    <td>{{ report.department_name or 'N/A' }}</td>
+                    <td><span class="badge bg-{% if report.status == 'approved' %}success{% elif report.status == 'pending' %}warning{% else %}secondary{% endif %}">{{ report.status }}</span></td>
+                    <td>{{ report.created_at }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewReport({{ report.id }})">
+                            <i class="bi bi-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        <i class="bi bi-inbox"></i> No reports found
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Report Detail Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalTitle">Report Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reportModalBody" style="max-height: 70vh; overflow-y: auto;">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="copyReportContent()" id="copyBtn" style="display: none;">
+                    <i class="bi bi-clipboard"></i> Copy Content
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewReport(reportId) {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+    modal.show();
+
+    // Fetch report details
+    fetch(`/api/report/${reportId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const report = data.report;
+                document.getElementById('reportModalTitle').textContent = report.title;
+                document.getElementById('reportModalBody').innerHTML = `
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>ID:</strong> ${report.id}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <span class="badge bg-${report.status === 'approved' ? 'success' : report.status === 'pending' ? 'warning' : 'secondary'}">
+                                ${report.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Submitted by:</strong> ${report.submitter_name || 'N/A'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Department:</strong> ${report.department_name || 'N/A'}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Type:</strong> ${report.report_type || 'N/A'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Priority:</strong> ${report.priority || 'normal'}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Date:</strong> ${report.created_at}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6><strong>Report Content:</strong></h6>
+                            <div class="mt-2 p-3 bg-light border rounded" id="reportContent" style="white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6;">
+                                ${report.content || 'No content'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Show copy button if there's content
+                if (report.content) {
+                    document.getElementById('copyBtn').style.display = 'inline-block';
+                }
+            } else {
+                document.getElementById('reportModalBody').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> ${data.message || 'Failed to load report'}
+                    </div>
+                `;
+                document.getElementById('copyBtn').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            document.getElementById('reportModalBody').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Error loading report: ${error.message}
+                </div>
+            `;
+            document.getElementById('copyBtn').style.display = 'none';
+        });
+}
+
+function copyReportContent() {
+    const contentElement = document.getElementById('reportContent');
+    if (contentElement) {
+        const content = contentElement.textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+            }, 2000);
+        }).catch(err => {
+            alert('Failed to copy content: ' + err);
+        });
+    }
+}
+</script>
+{% endblock %}

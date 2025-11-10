@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-diagram-3"></i> Departments</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+        <i class="bi bi-plus-circle"></i> Create Department
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list"></i> All Departments ({{ departments|length }})
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Level</th>
+                        <th>Parent</th>
+                        <th>Users</th>
+                        <th>Reports</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in departments %}
+                    <tr>
+                        <td>{{ dept.id }}</td>
+                        <td>
+                            <strong>{{ dept.name }}</strong><br>
+                            <small class="text-muted">{{ dept.name_en }}</small>
+                        </td>
+                        <td><span class="badge bg-info">Level {{ dept.level }}</span></td>
+                        <td>
+                            {% if dept.parent_department_id %}
+                            ID: {{ dept.parent_department_id }}
+                            {% else %}
+                            <span class="badge bg-primary">Root</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ dept.user_count }}</td>
+                        <td>{{ dept.report_count }}</td>
+                        <td>
+                            {% if dept.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Department Modal -->
+<div class="modal fade" id="createDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder-plus"></i> Create Department</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createDeptForm">
+                    <div class="mb-3">
+                        <label class="form-label">Arabic Name</label>
+                        <input type="text" class="form-control" id="dept_name_ar" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">English Name</label>
+                        <input type="text" class="form-control" id="dept_name_en" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Parent Department</label>
+                        <select class="form-select" id="dept_parent">
+                            <option value="">Root Department</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }} (Level {{ dept.level }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="dept_description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createDepartment()">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createDepartment() {
+    const nameAr = document.getElementById('dept_name_ar').value;
+    const nameEn = document.getElementById('dept_name_en').value;
+    const parentId = document.getElementById('dept_parent').value;
+    const description = document.getElementById('dept_description').value;
+
+    fetch('/departments/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `name_ar=${encodeURIComponent(nameAr)}&name_en=${encodeURIComponent(nameEn)}&parent_id=${parentId}&description=${encodeURIComponent(description)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+</script>
+{% endblock %}

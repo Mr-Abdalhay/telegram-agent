@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}User Details{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-person"></i> User Details</h1>
+    {% if session.role == 'admin' %}
+    <div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignDepartmentModal">
+            <i class="bi bi-building"></i> Assign Department
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h4>{{ user.first_name }} {{ user.last_name|default('') }}</h4>
+        <p><strong>User ID:</strong> {{ user.user_id }}</p>
+        <p><strong>Username:</strong> @{{ user.username|default('N/A') }}</p>
+        <p><strong>Status:</strong>
+            {% if user.is_active %}
+            <span class="badge bg-success">Active</span>
+            {% else %}
+            <span class="badge bg-danger">Inactive</span>
+            {% endif %}
+        </p>
+        <p><strong>Roles:</strong>
+            {% for role in user.roles %}
+            <span class="badge bg-info">{{ role.role_display_name }}</span>
+            {% endfor %}
+        </p>
+        <p><strong>Department:</strong>
+            {% if user.primary_role and user.primary_role.department_name %}
+            {{ user.primary_role.department_name }}
+            {% else %}
+            <span class="text-muted">Not assigned</span>
+            {% endif %}
+        </p>
+        <p><strong>Reports:</strong> {{ user.reports|length }}</p>
+    </div>
+</div>
+
+<!-- Assign Department Modal (Admin Only) -->
+{% if session.role == 'admin' %}
+<div class="modal fade" id="assignDepartmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-building"></i> Assign Department
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignDepartmentForm">
+                    <div class="mb-3">
+                        <label for="assign_dept_id" class="form-label">Select Department</label>
+                        <select class="form-select" id="assign_dept_id" required>
+                            <option value="">Choose department...</option>
+                            <!-- Departments will be loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assign_role" class="form-label">Role in Department</label>
+                        <select class="form-select" id="assign_role" required>
+                            <option value="employee">Employee</option>
+                            <option value="manager">Manager</option>
+                            <option value="upper_manager">Upper Manager</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="assignDepartment({{ user.user_id }})">Assign</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('users_list') }}" class="btn btn-secondary mt-3">Back to Users</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if session.role == 'admin' %}
+// Load departments when modal opens
+document.getElementById('assignDepartmentModal').addEventListener('show.bs.modal', function() {
+    fetch('/api/departments')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('assign_dept_id');
+                select.innerHTML = '<option value="">Choose department...</option>';
+
+                data.departments.forEach(dept => {
+                    if (dept.is_active) {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = `${dept.name} (${dept.name_en})`;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        });
+});
+
+function assignDepartment(userId) {
+    const deptId = document.getElementById('assign_dept_id').value;
+    const role = document.getElementById('assign_role').value;
+
+    if (!deptId || !role) {
+        alert('Please select both department and role');
+        return;
+    }
+
+    fetch('/users/assign-department', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `user_id=${userId}&dept_id=${deptId}&role=${role}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

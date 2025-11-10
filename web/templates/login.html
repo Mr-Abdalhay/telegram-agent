@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="col-md-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-robot" style="font-size: 4rem; color: var(--primary-color);"></i>
+                        <h2 class="mt-3">Telegram Bot</h2>
+                        <p class="text-muted">Admin Panel Login</p>
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label">
+                                <i class="bi bi-person"></i> User ID
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="user_id" name="user_id"
+                                   placeholder="Enter your Telegram user ID" required autofocus>
+                            <small class="form-text text-muted">
+                                Your numeric Telegram user ID (e.g., 123456789)
+                            </small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock"></i> Password
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password"
+                                   placeholder="Enter password" required>
+                            <small class="form-text text-muted">
+                                Use your user_id or "admin" as password
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>First time?</strong><br>
+                        <ol class="mb-0 mt-2">
+                            <li>Send <code>/start</code> to the Telegram bot</li>
+                            <li>Use <code>/register</code> to join a department</li>
+                            <li>Get your user ID from bot or @userinfobot</li>
+                            <li>Login here (password = your user ID)</li>
+                        </ol>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-shield-lock"></i>
+                        <strong>Access Levels:</strong>
+                        <ul class="mb-0 mt-2 small">
+                            <li><strong>Manager+</strong> can view users & departments</li>
+                            <li><strong>Admin</strong> can manage everything</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3 text-muted">
+                <small>
+                    <i class="bi bi-telegram"></i> Telegram Bot Admin Panel v1.0
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
