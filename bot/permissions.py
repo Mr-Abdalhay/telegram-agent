@@ -180,8 +180,7 @@ class AccessControl:
 
         # Admin can view all
         if user_role['permissions'].get('can_view_all'):
-            # Get all reports (simplified - would need pagination)
-            return []  # TODO: Implement admin view all
+            return self.db.get_all_reports(limit=limit, status=status)
 
         # Get accessible departments
         accessible_depts = self.get_accessible_departments(user_id)
