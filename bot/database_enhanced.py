@@ -810,26 +810,35 @@ class DatabaseEnhanced:
         conn.close()
         return count
 
-    def get_all_reports(self, limit: int = 100) -> List[Dict]:
+    def get_all_reports(self, limit: int = 100, status: str = None) -> List[Dict]:
         """Get all reports (admin view)"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT r.id, r.title, r.content, r.status, r.created_at,
+
+        query = '''
+            SELECT r.id, r.title, r.content, r.status, r.submitted_at, r.created_at,
                    u.username, u.first_name, d.name as department_name
             FROM reports r
             LEFT JOIN users u ON r.submitted_by = u.user_id
             LEFT JOIN departments d ON r.department_id = d.id
-            ORDER BY r.created_at DESC
-            LIMIT ?
-        ''', (limit,))
+        '''
+        params = []
+
+        if status:
+            query += ' WHERE r.status = ?'
+            params.append(status)
+
+        query += ' ORDER BY r.submitted_at DESC LIMIT ?'
+        params.append(limit)
+
+        cursor.execute(query, params)
         rows = cursor.fetchall()
         conn.close()
 
         return [{
             'id': r[0], 'title': r[1], 'content': r[2], 'status': r[3],
-            'created_at': r[4], 'username': r[5], 'first_name': r[6],
-            'department_name': r[7]
+            'submitted_at': r[4], 'created_at': r[5], 'username': r[6],
+            'first_name': r[7], 'department_name': r[8]
         } for r in rows]
 
     def get_all_users(self, active_only: bool = False) -> List[Dict]:
