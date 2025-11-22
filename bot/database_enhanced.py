@@ -209,13 +209,14 @@ class DatabaseEnhanced:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             try:
-                # If this should be primary role, unset other primary roles
+                # If this should be primary role, unset other primary roles first
                 if is_primary:
                     cursor.execute(
                         'UPDATE user_roles SET is_primary = 0 WHERE user_id = ?',
                         (user_id,)
                     )
 
+                # Try to insert new role
                 cursor.execute(
                     '''
                     INSERT INTO user_roles (user_id, role_id, department_id, assigned_by, is_primary)
@@ -227,8 +228,37 @@ class DatabaseEnhanced:
                 conn.close()
                 return True
             except sqlite3.IntegrityError:
-                conn.close()
-                return False
+                # Role already exists for this user/dept combination - UPDATE instead
+                try:
+                    cursor.execute(
+                        '''
+                        UPDATE user_roles
+                        SET is_active = 1, is_primary = ?, assigned_by = ?, assigned_at = CURRENT_TIMESTAMP
+                        WHERE user_id = ? AND role_id = ? AND department_id IS ?
+                        ''',
+                        (1 if is_primary else 0, assigned_by, user_id, role['id'], department_id)
+                    )
+                    if cursor.rowcount == 0:
+                        # No existing role found, might be different role/dept combo
+                        # Delete old assignments and insert new one
+                        cursor.execute(
+                            'DELETE FROM user_roles WHERE user_id = ? AND is_primary = 1',
+                            (user_id,)
+                        )
+                        cursor.execute(
+                            '''
+                            INSERT INTO user_roles (user_id, role_id, department_id, assigned_by, is_primary)
+                            VALUES (?, ?, ?, ?, ?)
+                            ''',
+                            (user_id, role['id'], department_id, assigned_by, 1 if is_primary else 0)
+                        )
+                    conn.commit()
+                    conn.close()
+                    return True
+                except Exception as e:
+                    conn.rollback()
+                    conn.close()
+                    return False
 
     def get_user_roles(self, user_id: int) -> List[Dict]:
         """Get all roles for a user"""
