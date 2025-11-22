@@ -25,9 +25,13 @@
             {% endif %}
         </p>
         <p><strong>Roles:</strong>
-            {% for role in user.roles %}
-            <span class="badge bg-info">{{ role.role_display_name }}</span>
-            {% endfor %}
+            {% if user.roles %}
+                {% for role in user.roles %}
+                <span class="badge bg-info">{{ role.role_name_ar }} ({{ role.role_name }})</span>
+                {% endfor %}
+            {% else %}
+                <span class="text-muted">No roles assigned</span>
+            {% endif %}
         </p>
         <p><strong>Department:</strong>
             {% if user.primary_role and user.primary_role.department_name %}
