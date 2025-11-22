@@ -422,6 +422,10 @@ function showDepartments() {
         .then(data => {
             if (data.success) {
                 const departments = data.departments;
+                // Create a map for parent lookup
+                const deptMap = {};
+                departments.forEach(d => deptMap[d.id] = d);
+
                 let html = `
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -430,6 +434,7 @@ function showDepartments() {
                                     <th>ID</th>
                                     <th>Name (AR)</th>
                                     <th>Name (EN)</th>
+                                    <th>Parent Department</th>
                                     <th>Level</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -443,11 +448,19 @@ function showDepartments() {
                         '<span class="badge bg-success">Active</span>' :
                         '<span class="badge bg-secondary">Inactive</span>';
 
+                    // Find parent department name
+                    let parentName = '<span class="text-muted">Root</span>';
+                    if (dept.parent_department_id && deptMap[dept.parent_department_id]) {
+                        const parent = deptMap[dept.parent_department_id];
+                        parentName = `${parent.name} (${parent.name_en || 'N/A'})`;
+                    }
+
                     html += `
                         <tr>
                             <td>${dept.id}</td>
                             <td>${dept.name}</td>
                             <td>${dept.name_en || 'N/A'}</td>
+                            <td>${parentName}</td>
                             <td>Level ${dept.level}</td>
                             <td>${statusBadge}</td>
                             <td>
