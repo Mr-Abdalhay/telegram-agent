@@ -203,6 +203,7 @@ def user_detail(user_id):
         return redirect(url_for('users_list'))
 
     user['roles'] = db.get_user_roles(user_id)
+    user['primary_role'] = db.get_user_primary_role(user_id)
     user['reports'] = db.get_user_reports(user_id)
 
     return render_template('user_detail.html', user=user)
